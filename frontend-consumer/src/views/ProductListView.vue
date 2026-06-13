@@ -86,6 +86,24 @@
           </div>
         </div>
 
+        <!-- 商家篩選 -->
+        <div class="filter-group" v-if="merchants.length">
+          <div class="filter-label">依店家篩選</div>
+          <div class="filter-options">
+            <button
+              v-for="m in merchants" :key="m.id"
+              class="filter-btn merchant-btn"
+              :class="{ active: merchantId === m.id }"
+              @click="merchantId = merchantId === m.id ? '' : m.id; doFetch()"
+            >
+              <img v-if="m.logo_url" :src="m.logo_url" class="mf-logo" />
+              <span v-else class="mf-avatar">{{ m.name[0] }}</span>
+              <span class="mf-name">{{ m.name }}</span>
+              <span class="mf-count">{{ m.product_count }}</span>
+            </button>
+          </div>
+        </div>
+
         <button class="reset-btn" @click="resetFilters">重設篩選</button>
       </aside>
 
@@ -193,12 +211,14 @@ import { useCartStore } from '../stores/cart'
 
 const cartStore = useCartStore()
 const products = ref([])
+const merchants = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const searchQ = ref('')
 const category = ref('')
 const activeTag = ref('')
 const sortBy = ref('')
+const merchantId = ref('')
 const viewMode = ref('grid')
 const sidebarOpen = ref(false)
 const priceMin = ref(null)
@@ -271,6 +291,7 @@ function buildParams(skip) {
   if (activeTag.value) p.tag = activeTag.value
   if (searchQ.value.trim()) p.q = searchQ.value.trim()
   if (sortBy.value) p.sort = sortBy.value
+  if (merchantId.value) p.merchant_id = merchantId.value
   return p
 }
 
@@ -305,10 +326,17 @@ function resetFilters() {
   priceMin.value = null
   priceMax.value = null
   minGroup.value = ''
+  merchantId.value = ''
   doFetch()
 }
 
-onMounted(doFetch)
+onMounted(async () => {
+  const [, mRes] = await Promise.all([
+    doFetch(),
+    api.get('/public/merchants').catch(() => ({ data: [] })),
+  ])
+  merchants.value = mRes.data
+})
 </script>
 
 <style scoped>
@@ -380,6 +408,24 @@ onMounted(doFetch)
   background: transparent; transition: all .15s;
 }
 .preset-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+.merchant-btn {
+  flex-direction: row; align-items: center; gap: 8px;
+  padding: 6px 10px; text-align: left;
+}
+.mf-logo { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mf-avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: var(--brand-light); color: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.mf-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mf-count {
+  font-size: 11px; color: var(--text-3);
+  background: var(--bg); border-radius: 99px;
+  padding: 1px 6px; border: 1px solid var(--border); flex-shrink: 0;
+}
 
 .reset-btn {
   padding: 8px; border-radius: var(--r-md);

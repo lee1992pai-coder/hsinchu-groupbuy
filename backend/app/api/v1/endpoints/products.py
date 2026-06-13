@@ -17,6 +17,7 @@ async def list_products(
     tag: str | None = Query(None),
     q: str | None = Query(None, description="關鍵字搜尋"),
     sort: str | None = Query(None, description="排序: price_asc, price_desc, newest"),
+    merchant_id: str | None = Query(None, description="依商家篩選"),
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
@@ -26,6 +27,12 @@ async def list_products(
         .options(selectinload(Product.merchant))
         .where(Product.is_active == True)
     )
+    if merchant_id:
+        from uuid import UUID as _UUID
+        try:
+            stmt = stmt.where(Product.merchant_id == _UUID(merchant_id))
+        except ValueError:
+            pass
     if category:
         stmt = stmt.where(Product.category == category)
     if tag:

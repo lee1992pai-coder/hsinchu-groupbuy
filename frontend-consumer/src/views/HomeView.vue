@@ -34,6 +34,32 @@
       </div>
     </section>
 
+    <!-- ── 精選店家橫列 ── -->
+    <section class="section" v-if="merchants.length">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-accent" />
+          <h2>精選店家</h2>
+          <span class="section-sub">{{ merchants.length }} 家認證商家</span>
+        </div>
+        <router-link to="/merchants" class="see-all">查看全部 →</router-link>
+      </div>
+      <div class="h-scroll merchants-row">
+        <div
+          v-for="m in merchants.slice(0, 10)" :key="m.id"
+          class="merchant-chip"
+          @click="$router.push(`/merchants/${m.id}`)"
+        >
+          <div class="mchip-logo-wrap">
+            <img v-if="m.logo_url" :src="m.logo_url" :alt="m.name" class="mchip-logo" />
+            <div v-else class="mchip-avatar">{{ m.name[0] }}</div>
+          </div>
+          <div class="mchip-name">{{ m.name }}</div>
+          <div class="mchip-count">{{ m.product_count }} 件</div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── 閃購區 ── -->
     <section class="section flash-section" v-if="flashProducts.length">
       <div class="section-header">
@@ -168,6 +194,7 @@ const banners = ref([])
 const groupBuys = ref([])
 const products = ref([])
 const flashProducts = ref([])
+const merchants = ref([])
 const pickupLocations = ref([])
 const loading = ref(false)
 const activeCategory = ref('')
@@ -265,16 +292,18 @@ function addToCart(product) {
 
 onMounted(async () => {
   loading.value = true
-  const [bannersRes, gbRes, locRes, flashRes] = await Promise.all([
+  const [bannersRes, gbRes, locRes, flashRes, merchantsRes] = await Promise.all([
     api.get('/banners').catch(() => ({ data: [] })),
     api.get('/group-buys/').catch(() => ({ data: [] })),
     api.get('/pickup/locations').catch(() => ({ data: [] })),
     api.get('/products/', { params: { tag: '限時特惠', limit: 8 } }).catch(() => ({ data: [] })),
+    api.get('/public/merchants').catch(() => ({ data: [] })),
   ])
   banners.value = bannersRes.data
   groupBuys.value = gbRes.data.slice(0, 4)
   pickupLocations.value = locRes.data
   flashProducts.value = flashRes.data
+  merchants.value = merchantsRes.data
 
   const now = new Date()
   flashEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0).getTime()
@@ -355,6 +384,27 @@ onUnmounted(() => clearInterval(flashTimerHandle))
   border: 1.5px solid var(--border); font-size: 13px; color: var(--text-2);
   background: var(--card); cursor: pointer; outline: none;
 }
+
+/* Merchants row */
+.merchants-row { padding-bottom: 10px; }
+.merchant-chip {
+  min-width: 110px; max-width: 110px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 14px 10px;
+  cursor: pointer; transition: all .18s; text-align: center;
+}
+.merchant-chip:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--brand); }
+.mchip-logo-wrap { width: 52px; height: 52px; }
+.mchip-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+.mchip-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; color: #fff;
+}
+.mchip-name { font-size: 12px; font-weight: 600; color: var(--text-1); line-height: 1.3; word-break: break-all; }
+.mchip-count { font-size: 11px; color: var(--text-3); }
 
 /* Flash section */
 .flash-badge {

@@ -34,6 +34,60 @@ async def health():
     return {"status": "ok", "version": "2.0.0"}
 
 
+# 公開商家列表 API（消費者端使用）
+@app.get("/api/v1/public/merchants")
+async def public_merchants():
+    from sqlalchemy import select, func
+    from app.core.database import AsyncSessionLocal
+    from app.models.merchant import Merchant, MerchantStatus
+    from app.models.product import Product
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(
+                Merchant.id, Merchant.name, Merchant.description, Merchant.logo_url,
+                func.count(Product.id).label("product_count"),
+            )
+            .outerjoin(Product, (Product.merchant_id == Merchant.id) & (Product.is_active == True))
+            .where(Merchant.status == MerchantStatus.APPROVED)
+            .group_by(Merchant.id, Merchant.name, Merchant.description, Merchant.logo_url)
+            .order_by(Merchant.name)
+        )
+        rows = result.all()
+    return [
+        {
+            "id": str(r.id), "name": r.name,
+            "description": r.description, "logo_url": r.logo_url,
+            "product_count": r.product_count,
+        }
+        for r in rows
+    ]
+
+
+# 公開單一商家資訊
+@app.get("/api/v1/public/merchants/{merchant_id}")
+async def public_merchant_detail(merchant_id: str):
+    from uuid import UUID
+    from sqlalchemy import select
+    from app.core.database import AsyncSessionLocal
+    from app.models.merchant import Merchant, MerchantStatus
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Merchant).where(
+                Merchant.id == UUID(merchant_id),
+                Merchant.status == MerchantStatus.APPROVED,
+            )
+        )
+        m = result.scalar_one_or_none()
+    if not m:
+        from fastapi import HTTPException
+        raise HTTPException(404)
+    return {
+        "id": str(m.id), "name": m.name,
+        "description": m.description, "logo_url": m.logo_url,
+        "phone": m.phone,
+    }
+
+
 # 公開 Banner API（消費者端首頁使用）
 @app.get("/api/v1/banners")
 async def public_banners():

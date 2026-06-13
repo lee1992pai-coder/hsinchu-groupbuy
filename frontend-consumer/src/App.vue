@@ -17,6 +17,7 @@
           <!-- Desktop Nav Links -->
           <nav class="nav-links">
             <router-link to="/products">商品瀏覽</router-link>
+            <router-link to="/merchants">精選店家</router-link>
             <router-link to="/group-buys">
               <span class="link-badge">🔥</span> 拼團中
             </router-link>
@@ -64,6 +65,7 @@
           <div class="mobile-drawer" :class="{ open: menuOpen }" @click.self="closeMenu">
             <nav class="drawer-nav">
               <router-link to="/products" @click="closeMenu">🏪 商品瀏覽</router-link>
+              <router-link to="/merchants" @click="closeMenu">🏬 精選店家</router-link>
               <router-link to="/group-buys" @click="closeMenu">🔥 拼團中</router-link>
               <router-link to="/cart" @click="closeMenu">🛒 購物車
                 <span v-if="cartStore.count" class="drawer-badge">{{ cartStore.count }}</span>
