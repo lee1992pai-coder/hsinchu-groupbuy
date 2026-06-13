@@ -19,5 +19,6 @@ class ProductOut(ProductCreate):
     id: UUID
     merchant_id: UUID
     is_active: bool
+    merchant_name: str | None = None
 
     model_config = {"from_attributes": True}
