@@ -16,7 +16,9 @@
       </el-table-column>
       <el-table-column prop="stock" label="總庫存" width="90" />
       <el-table-column prop="min_group_size" label="成團數" width="90" />
-      <el-table-column prop="category" label="分類" width="90" />
+      <el-table-column label="分類" width="100">
+        <template #default="{ row }">{{ categoryLabel(row.category) }}</template>
+      </el-table-column>
       <el-table-column label="狀態" width="90">
         <template #default="{ row }">
           <el-tag :type="row.is_active ? 'success' : 'info'">{{ row.is_active ? '上架' : '下架' }}</el-tag>
@@ -86,11 +88,17 @@
           </el-col>
         </el-row>
         <el-form-item label="分類">
-          <el-select v-model="pForm.category">
-            <el-option label="美食" value="food" />
-            <el-option label="飲品" value="drink" />
-            <el-option label="甜點" value="dessert" />
-            <el-option label="生鮮" value="fresh" />
+          <el-select v-model="pForm.category" style="width:100%">
+            <el-option label="🍱 熟食料理" value="food" />
+            <el-option label="🧋 飲品茶飲" value="drink" />
+            <el-option label="🍰 甜點烘焙" value="dessert" />
+            <el-option label="🥩 生鮮蔬果" value="fresh" />
+            <el-option label="🍿 零食點心" value="snack" />
+            <el-option label="🧊 冷凍食品" value="frozen" />
+            <el-option label="🥗 健康養生" value="health" />
+            <el-option label="🍳 早午餐" value="brunch" />
+            <el-option label="🌏 異國料理" value="international" />
+            <el-option label="🎁 伴手禮" value="gift" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -157,6 +165,14 @@ import api from '../api'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
+
+const CATEGORY_MAP = {
+  food: '🍱 熟食料理', drink: '🧋 飲品茶飲', dessert: '🍰 甜點烘焙',
+  fresh: '🥩 生鮮蔬果', snack: '🍿 零食點心', frozen: '🧊 冷凍食品',
+  health: '🥗 健康養生', brunch: '🍳 早午餐', international: '🌏 異國料理', gift: '🎁 伴手禮',
+}
+function categoryLabel(key) { return CATEGORY_MAP[key] || key }
+
 const products = ref([])
 const variants = ref([])
 const loading = ref(false)

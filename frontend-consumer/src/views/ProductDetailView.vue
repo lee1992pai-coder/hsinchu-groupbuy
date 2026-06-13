@@ -328,7 +328,9 @@ const soldHint = computed(() => {
   return s > 100 ? '100+ 件' : `${s} 件`
 })
 const categoryLabel = computed(() => ({
-  food: '美食', drink: '飲品', dessert: '甜點', fresh: '生鮮'
+  food: '🍱 熟食料理', drink: '🧋 飲品茶飲', dessert: '🍰 甜點烘焙',
+  fresh: '🥩 生鮮蔬果', snack: '🍿 零食點心', frozen: '🧊 冷凍食品',
+  health: '🥗 健康養生', brunch: '🍳 早午餐', international: '🌏 異國料理', gift: '🎁 伴手禮',
 })[product.value?.category] || product.value?.category)
 
 const formattedDesc = computed(() =>

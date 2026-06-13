@@ -195,11 +195,17 @@ const flashTimer = ref({ h: '02', m: '00', s: '00' })
 let flashEndTime = null
 
 const categories = [
-  { key: 'all',     label: '全部',   icon: '🏪' },
-  { key: 'food',    label: '美食',   icon: '🍱' },
-  { key: 'drink',   label: '飲品',   icon: '🧋' },
-  { key: 'dessert', label: '甜點',   icon: '🍰' },
-  { key: 'fresh',   label: '生鮮',   icon: '🥩' },
+  { key: 'all',           label: '全部',     icon: '🏪' },
+  { key: 'food',          label: '熟食料理', icon: '🍱' },
+  { key: 'drink',         label: '飲品茶飲', icon: '🧋' },
+  { key: 'dessert',       label: '甜點烘焙', icon: '🍰' },
+  { key: 'fresh',         label: '生鮮蔬果', icon: '🥩' },
+  { key: 'snack',         label: '零食點心', icon: '🍿' },
+  { key: 'frozen',        label: '冷凍食品', icon: '🧊' },
+  { key: 'health',        label: '健康養生', icon: '🥗' },
+  { key: 'brunch',        label: '早午餐',   icon: '🍳' },
+  { key: 'international', label: '異國料理', icon: '🌏' },
+  { key: 'gift',          label: '伴手禮',   icon: '🎁' },
 ]
 
 const hotTags = [

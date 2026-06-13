@@ -256,7 +256,11 @@ function loadAll() { loadSummary(); loadTrend(); loadCategory(); loadProduct(); 
 
 // ── ECharts ───────────────────────────────────────────────
 const COLORS = ['#2563EB', '#16A34A', '#EA580C', '#7C3AED', '#0891B2', '#D97706']
-const catMap = { food: '美食', drink: '飲品', dessert: '甜點', fresh: '生鮮' }
+const catMap = {
+  food: '熟食料理', drink: '飲品茶飲', dessert: '甜點烘焙', fresh: '生鮮蔬果',
+  snack: '零食點心', frozen: '冷凍食品', health: '健康養生', brunch: '早午餐',
+  international: '異國料理', gift: '伴手禮',
+}
 
 function renderTrend() {
   if (!trendChartEl.value) return
@@ -302,7 +306,10 @@ function renderPie() {
 const fmt = n => `NT$ ${Number(n || 0).toLocaleString('zh-TW')}`
 const fmtDate = s => new Date(s).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 const catLabel = c => catMap[c] || c
-const catType = c => ({ food: '', drink: 'success', dessert: 'warning', fresh: 'danger' }[c] || 'info')
+const catType = c => ({
+  food: '', drink: 'success', dessert: 'warning', fresh: 'danger',
+  snack: 'info', frozen: 'info', health: 'success', brunch: '', international: 'warning', gift: 'danger',
+}[c] || 'info')
 const rankCls = i => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''
 const statusOpts = [
   { v: 'pending_payment', l: '待付款' }, { v: 'paid', l: '已付款' },
