@@ -14,7 +14,7 @@
             <span class="logo-text">新竹<em>團購</em></span>
           </router-link>
 
-          <!-- Nav Links -->
+          <!-- Desktop Nav Links -->
           <nav class="nav-links">
             <router-link to="/products">商品瀏覽</router-link>
             <router-link to="/group-buys">
@@ -41,6 +41,42 @@
               <router-link to="/login" class="btn-login">登入 / 註冊</router-link>
             </template>
           </nav>
+
+          <!-- Mobile Right (cart + hamburger) -->
+          <div class="mobile-right">
+            <router-link to="/cart" class="mobile-cart-btn">
+              <el-badge :value="cartStore.count || 0" :hidden="!cartStore.count" type="danger">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <path d="M16 10a4 4 0 01-8 0"/>
+                </svg>
+              </el-badge>
+            </router-link>
+            <button class="hamburger" @click="menuOpen = !menuOpen" aria-label="選單">
+              <span :class="{ open: menuOpen }"></span>
+              <span :class="{ open: menuOpen }"></span>
+              <span :class="{ open: menuOpen }"></span>
+            </button>
+          </div>
+
+          <!-- Mobile Drawer -->
+          <div class="mobile-drawer" :class="{ open: menuOpen }" @click.self="closeMenu">
+            <nav class="drawer-nav">
+              <router-link to="/products" @click="closeMenu">🏪 商品瀏覽</router-link>
+              <router-link to="/group-buys" @click="closeMenu">🔥 拼團中</router-link>
+              <router-link to="/cart" @click="closeMenu">🛒 購物車
+                <span v-if="cartStore.count" class="drawer-badge">{{ cartStore.count }}</span>
+              </router-link>
+              <template v-if="authStore.token">
+                <router-link to="/orders" @click="closeMenu">📦 我的訂單</router-link>
+                <router-link to="/profile" @click="closeMenu">👤 個人資料</router-link>
+              </template>
+              <template v-else>
+                <router-link to="/login" class="drawer-login" @click="closeMenu">登入 / 註冊</router-link>
+              </template>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -69,11 +105,14 @@
 
 <script setup>
 import zhTw from 'element-plus/es/locale/lang/zh-tw'
+import { ref } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const menuOpen = ref(false)
+function closeMenu() { menuOpen.value = false }
 </script>
 
 <style>
@@ -204,4 +243,89 @@ body {
 }
 .footer-desc { font-size: 13px; color: #64748B; }
 .footer-copy { font-size: 12px; color: #475569; }
+
+/* ── Mobile Nav ───────────────────────────────────────────── */
+.mobile-right { display: none; align-items: center; gap: 4px; }
+
+.mobile-cart-btn {
+  display: flex; align-items: center;
+  padding: 8px; color: var(--text-2);
+  border-radius: var(--r-md);
+}
+.mobile-cart-btn:hover { background: var(--bg); }
+
+.hamburger {
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
+  width: 40px; height: 40px;
+  background: none; border: none; cursor: pointer;
+  padding: 8px; border-radius: var(--r-md);
+}
+.hamburger:hover { background: var(--bg); }
+.hamburger span {
+  display: block; height: 2px; background: var(--text-2);
+  border-radius: 2px; transition: all .25s;
+  transform-origin: center;
+}
+.hamburger span.open:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger span.open:nth-child(2) { opacity: 0; }
+.hamburger span.open:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-drawer {
+  display: none;
+  position: fixed; inset: 64px 0 0 0; z-index: 199;
+  background: rgba(0,0,0,.4);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.mobile-drawer.open { opacity: 1; pointer-events: all; }
+
+.drawer-nav {
+  position: absolute; top: 0; right: 0;
+  width: 240px; height: 100%;
+  background: var(--card);
+  display: flex; flex-direction: column;
+  padding: 16px 12px;
+  gap: 4px;
+  transform: translateX(100%);
+  transition: transform .25s;
+  box-shadow: var(--shadow-lg);
+}
+.mobile-drawer.open .drawer-nav { transform: translateX(0); }
+
+.drawer-nav a {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+  font-size: 15px; font-weight: 500; color: var(--text-2);
+  padding: 12px 16px; border-radius: var(--r-md);
+  transition: all .15s;
+}
+.drawer-nav a:hover { background: var(--bg); color: var(--text-1); }
+.drawer-nav a.router-link-active { color: var(--brand); background: var(--brand-light); }
+
+.drawer-badge {
+  margin-left: auto;
+  background: var(--danger); color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 1px 7px; border-radius: 99px;
+}
+
+.drawer-login {
+  margin-top: 8px;
+  justify-content: center;
+  background: var(--brand) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.drawer-login:hover { background: var(--brand-hover) !important; }
+
+/* ── Responsive Breakpoints ───────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .mobile-right { display: flex; }
+  .mobile-drawer { display: block; }
+
+  .main-content { padding: 20px 16px; }
+
+  .footer { padding: 24px 16px; }
+}
 </style>

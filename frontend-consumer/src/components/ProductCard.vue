@@ -138,4 +138,12 @@ const discountPct = computed(() =>
 .price-label { font-size: 10px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
 .price-value { font-size: 20px; font-weight: 700; color: var(--brand); line-height: 1; }
 .price-original { font-size: 12px; color: var(--text-3); text-decoration: line-through; align-self: flex-end; margin-bottom: 2px; }
+
+@media (max-width: 480px) {
+  .card-img { height: 140px; }
+  /* Show add button always on touch devices */
+  .add-btn { opacity: 1; transform: translateY(0); }
+  .card-body { padding: 10px 12px 12px; }
+  .price-value { font-size: 17px; }
+}
 </style>
