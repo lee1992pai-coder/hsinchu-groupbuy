@@ -89,16 +89,30 @@
         </el-row>
         <el-form-item label="分類">
           <el-select v-model="pForm.category" style="width:100%">
-            <el-option label="🍱 熟食料理" value="food" />
-            <el-option label="🧋 飲品茶飲" value="drink" />
-            <el-option label="🍰 甜點烘焙" value="dessert" />
-            <el-option label="🥩 生鮮蔬果" value="fresh" />
-            <el-option label="🍿 零食點心" value="snack" />
-            <el-option label="🧊 冷凍食品" value="frozen" />
-            <el-option label="🥗 健康養生" value="health" />
-            <el-option label="🍳 早午餐" value="brunch" />
-            <el-option label="🌏 異國料理" value="international" />
-            <el-option label="🎁 伴手禮" value="gift" />
+            <el-option-group label="🍽️ 食品飲料">
+              <el-option label="🍱 熟食料理" value="food" />
+              <el-option label="🧋 飲品茶飲" value="drink" />
+              <el-option label="🍰 甜點烘焙" value="dessert" />
+              <el-option label="🥩 生鮮蔬果" value="fresh" />
+              <el-option label="🍿 零食點心" value="snack" />
+              <el-option label="🧊 冷凍食品" value="frozen" />
+              <el-option label="🥗 健康養生" value="health" />
+              <el-option label="🍳 早午餐" value="brunch" />
+              <el-option label="🌏 異國料理" value="international" />
+              <el-option label="🎁 伴手禮" value="gift" />
+            </el-option-group>
+            <el-option-group label="🏠 生活百貨">
+              <el-option label="🛒 生活日用" value="daily" />
+              <el-option label="🧹 清潔衛生" value="cleaning" />
+              <el-option label="💄 美妝保養" value="beauty" />
+              <el-option label="👶 母嬰用品" value="baby" />
+              <el-option label="🐾 寵物用品" value="pet" />
+              <el-option label="📱 3C家電" value="electronics" />
+              <el-option label="🛋️ 居家用品" value="home" />
+              <el-option label="✏️ 文具玩具" value="stationery" />
+              <el-option label="👕 服飾配件" value="fashion" />
+              <el-option label="🏃 運動戶外" value="sports" />
+            </el-option-group>
           </el-select>
         </el-form-item>
       </el-form>
@@ -170,6 +184,9 @@ const CATEGORY_MAP = {
   food: '🍱 熟食料理', drink: '🧋 飲品茶飲', dessert: '🍰 甜點烘焙',
   fresh: '🥩 生鮮蔬果', snack: '🍿 零食點心', frozen: '🧊 冷凍食品',
   health: '🥗 健康養生', brunch: '🍳 早午餐', international: '🌏 異國料理', gift: '🎁 伴手禮',
+  daily: '🛒 生活日用', cleaning: '🧹 清潔衛生', beauty: '💄 美妝保養',
+  baby: '👶 母嬰用品', pet: '🐾 寵物用品', electronics: '📱 3C家電',
+  home: '🛋️ 居家用品', stationery: '✏️ 文具玩具', fashion: '👕 服飾配件', sports: '🏃 運動戶外',
 }
 function categoryLabel(key) { return CATEGORY_MAP[key] || key }
 

@@ -16,18 +16,23 @@
       </el-carousel>
     </section>
 
-    <!-- 分類快捷列 -->
-    <div class="category-bar">
-      <button
-        v-for="c in categories" :key="c.key"
-        class="cat-pill"
-        :class="{ active: activeCategory === c.key }"
-        @click="setCategory(c.key)"
-      >
-        <span class="cat-icon">{{ c.icon }}</span>
-        {{ c.label }}
-      </button>
-    </div>
+    <!-- ── 大賣場分類宮格 ── -->
+    <section class="dept-section">
+      <div class="dept-group" v-for="group in categoryGroups" :key="group.label">
+        <div class="dept-group-title">{{ group.groupIcon }} {{ group.label }}</div>
+        <div class="dept-grid">
+          <button
+            v-for="c in group.items" :key="c.key"
+            class="dept-cell"
+            :class="{ active: activeCategory === c.key }"
+            @click="setCategory(c.key)"
+          >
+            <span class="dept-icon">{{ c.icon }}</span>
+            <span class="dept-label">{{ c.label }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- ── 閃購區 ── -->
     <section class="section flash-section" v-if="flashProducts.length">
@@ -79,8 +84,7 @@
       </div>
       <div class="product-grid">
         <GroupBuyCard
-          v-for="gb in groupBuys"
-          :key="gb.id"
+          v-for="gb in groupBuys" :key="gb.id"
           :group-buy="gb"
           @click="$router.push(`/group-buys/${gb.id}`)"
         />
@@ -92,7 +96,7 @@
       <div class="section-header">
         <div class="section-title">
           <span class="section-accent" />
-          <h2>{{ categoryLabel }}商品</h2>
+          <h2>{{ activeCategoryLabel }}</h2>
         </div>
         <div class="section-right">
           <select class="home-sort" v-model="sortBy" @change="filterProducts">
@@ -105,8 +109,7 @@
       </div>
       <div class="product-grid" v-loading="loading">
         <ProductCard
-          v-for="p in products"
-          :key="p.id"
+          v-for="p in products" :key="p.id"
           :product="p"
           @add-to-cart="addToCart(p)"
           @click="$router.push(`/products/${p.id}`)"
@@ -115,28 +118,8 @@
       </div>
     </section>
 
-    <!-- ── 熱門標籤快捷 ── -->
-    <section class="section tag-section">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-accent" />
-          <h2>熱門分類</h2>
-        </div>
-      </div>
-      <div class="hot-tags">
-        <button
-          v-for="t in hotTags" :key="t"
-          class="hot-tag-btn"
-          @click="$router.push(`/products?tag=${t}`)"
-        >
-          <span class="hot-tag-icon">{{ t.icon }}</span>
-          {{ t.label }}
-        </button>
-      </div>
-    </section>
-
     <!-- ── 取貨地點 ── -->
-    <section class="section pickup-section">
+    <section class="section pickup-section" v-if="pickupLocations.length">
       <div class="section-header">
         <div class="section-title">
           <span class="section-accent" />
@@ -187,34 +170,54 @@ const products = ref([])
 const flashProducts = ref([])
 const pickupLocations = ref([])
 const loading = ref(false)
-const activeCategory = ref('all')
+const activeCategory = ref('')
 const sortBy = ref('')
 let flashTimerHandle = null
-
 const flashTimer = ref({ h: '02', m: '00', s: '00' })
 let flashEndTime = null
 
-const categories = [
-  { key: 'all',           label: '全部',     icon: '🏪' },
-  { key: 'food',          label: '熟食料理', icon: '🍱' },
-  { key: 'drink',         label: '飲品茶飲', icon: '🧋' },
-  { key: 'dessert',       label: '甜點烘焙', icon: '🍰' },
-  { key: 'fresh',         label: '生鮮蔬果', icon: '🥩' },
-  { key: 'snack',         label: '零食點心', icon: '🍿' },
-  { key: 'frozen',        label: '冷凍食品', icon: '🧊' },
-  { key: 'health',        label: '健康養生', icon: '🥗' },
-  { key: 'brunch',        label: '早午餐',   icon: '🍳' },
-  { key: 'international', label: '異國料理', icon: '🌏' },
-  { key: 'gift',          label: '伴手禮',   icon: '🎁' },
+const categoryGroups = [
+  {
+    label: '食品飲料',
+    groupIcon: '🍽️',
+    items: [
+      { key: 'food',          label: '熟食料理', icon: '🍱' },
+      { key: 'drink',         label: '飲品茶飲', icon: '🧋' },
+      { key: 'dessert',       label: '甜點烘焙', icon: '🍰' },
+      { key: 'fresh',         label: '生鮮蔬果', icon: '🥩' },
+      { key: 'snack',         label: '零食點心', icon: '🍿' },
+      { key: 'frozen',        label: '冷凍食品', icon: '🧊' },
+      { key: 'health',        label: '健康養生', icon: '🥗' },
+      { key: 'brunch',        label: '早午餐',   icon: '🍳' },
+      { key: 'international', label: '異國料理', icon: '🌏' },
+      { key: 'gift',          label: '伴手禮',   icon: '🎁' },
+    ],
+  },
+  {
+    label: '生活百貨',
+    groupIcon: '🏠',
+    items: [
+      { key: 'daily',       label: '生活日用', icon: '🛒' },
+      { key: 'cleaning',    label: '清潔衛生', icon: '🧹' },
+      { key: 'beauty',      label: '美妝保養', icon: '💄' },
+      { key: 'baby',        label: '母嬰用品', icon: '👶' },
+      { key: 'pet',         label: '寵物用品', icon: '🐾' },
+      { key: 'electronics', label: '3C家電',   icon: '📱' },
+      { key: 'home',        label: '居家用品', icon: '🛋️' },
+      { key: 'stationery',  label: '文具玩具', icon: '✏️' },
+      { key: 'fashion',     label: '服飾配件', icon: '👕' },
+      { key: 'sports',      label: '運動戶外', icon: '🏃' },
+    ],
+  },
 ]
 
-const hotTags = [
-  { label: '今日熱門', icon: '🔥' },
-  { label: '園區下午茶', icon: '☕' },
-  { label: '限時特惠', icon: '⚡' },
-  { label: '新品上架', icon: '✨' },
-  { label: '人氣必買', icon: '⭐' },
-]
+const allCategories = categoryGroups.flatMap(g => g.items)
+
+const activeCategoryLabel = computed(() => {
+  if (!activeCategory.value) return '全部商品'
+  const c = allCategories.find(c => c.key === activeCategory.value)
+  return c ? `${c.icon} ${c.label}` : '全部商品'
+})
 
 const features = [
   { icon: '🔒', title: '安全購物', desc: '每筆交易受平台保障' },
@@ -223,18 +226,10 @@ const features = [
   { icon: '💵', title: '取貨付款', desc: '到場驗貨再付款' },
 ]
 
-const categoryLabel = computed(() => {
-  const c = categories.find((c) => c.key === activeCategory.value)
-  return c?.key === 'all' ? '' : `${c?.label} `
-})
-
 function updateFlashTimer() {
   if (!flashEndTime) return
   const diff = flashEndTime - Date.now()
-  if (diff <= 0) {
-    flashTimer.value = { h: '00', m: '00', s: '00' }
-    return
-  }
+  if (diff <= 0) { flashTimer.value = { h: '00', m: '00', s: '00' }; return }
   const h = Math.floor(diff / 3600000)
   const m = Math.floor((diff % 3600000) / 60000)
   const s = Math.floor((diff % 60000) / 1000)
@@ -246,17 +241,16 @@ function updateFlashTimer() {
 }
 
 function setCategory(key) {
-  activeCategory.value = key
+  activeCategory.value = activeCategory.value === key ? '' : key
   filterProducts()
 }
 
 async function filterProducts() {
   loading.value = true
   try {
-    const params = {}
-    if (activeCategory.value !== 'all') params.category = activeCategory.value
+    const params = { limit: 12 }
+    if (activeCategory.value) params.category = activeCategory.value
     if (sortBy.value) params.sort = sortBy.value
-    params.limit = 12
     const { data } = await api.get('/products/', { params })
     products.value = data
   } finally {
@@ -282,7 +276,6 @@ onMounted(async () => {
   pickupLocations.value = locRes.data
   flashProducts.value = flashRes.data
 
-  // flash timer: end at next midnight
   const now = new Date()
   flashEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0).getTime()
   updateFlashTimer()
@@ -290,7 +283,6 @@ onMounted(async () => {
 
   await filterProducts()
 })
-
 onUnmounted(() => clearInterval(flashTimerHandle))
 </script>
 
@@ -309,25 +301,43 @@ onUnmounted(() => clearInterval(flashTimerHandle))
 }
 .hero-title { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.3; max-width: 420px; }
 .hero-cta {
-  display: inline-block;
-  background: var(--accent); color: #fff;
-  font-size: 14px; font-weight: 700;
-  padding: 8px 20px; border-radius: var(--r-md);
-  width: fit-content;
+  display: inline-block; background: var(--accent); color: #fff;
+  font-size: 14px; font-weight: 700; padding: 8px 20px; border-radius: var(--r-md); width: fit-content;
 }
 
-/* Category bar */
-.category-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px; }
-.category-bar::-webkit-scrollbar { display: none; }
-.cat-pill {
-  display: flex; align-items: center; gap: 7px;
-  padding: 9px 18px; border-radius: 99px;
-  background: var(--card); border: 1.5px solid var(--border);
-  font-size: 14px; font-weight: 500; color: var(--text-2);
-  cursor: pointer; white-space: nowrap; transition: all .18s;
+/* ── 大賣場分類宮格 ── */
+.dept-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 24px;
+  display: flex; flex-direction: column; gap: 20px;
 }
-.cat-pill:hover, .cat-pill.active { border-color: var(--brand); color: var(--brand); background: var(--brand-light); font-weight: 600; }
-.cat-icon { font-size: 18px; }
+.dept-group { display: flex; flex-direction: column; gap: 12px; }
+.dept-group-title {
+  font-size: 13px; font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+.dept-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 4px; border-radius: var(--r-md);
+  border: 1.5px solid transparent;
+  background: transparent; cursor: pointer;
+  transition: all .18s;
+}
+.dept-cell:hover {
+  background: var(--brand-light); border-color: var(--brand);
+}
+.dept-cell.active {
+  background: var(--brand-light); border-color: var(--brand);
+}
+.dept-icon { font-size: 22px; line-height: 1; }
+.dept-label { font-size: 11px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+.dept-cell:hover .dept-label, .dept-cell.active .dept-label { color: var(--brand); font-weight: 600; }
 
 /* Sections */
 .section { display: flex; flex-direction: column; gap: 20px; }
@@ -340,16 +350,13 @@ onUnmounted(() => clearInterval(flashTimerHandle))
 .see-all { font-size: 14px; font-weight: 500; color: var(--brand); text-decoration: none; }
 .see-all:hover { opacity: .8; }
 
-/* Home sort */
 .home-sort {
   padding: 5px 10px; border-radius: var(--r-md);
-  border: 1.5px solid var(--border);
-  font-size: 13px; color: var(--text-2);
+  border: 1.5px solid var(--border); font-size: 13px; color: var(--text-2);
   background: var(--card); cursor: pointer; outline: none;
 }
 
 /* Flash section */
-.flash-section { }
 .flash-badge {
   display: inline-flex; align-items: center;
   background: linear-gradient(135deg, #f59e0b, #ef4444);
@@ -365,28 +372,22 @@ onUnmounted(() => clearInterval(flashTimerHandle))
 }
 .timer-sep { font-size: 16px; font-weight: 700; color: var(--text-2); }
 
-/* Horizontal scroll */
-.h-scroll {
-  display: flex; gap: 14px;
-  overflow-x: auto; padding-bottom: 8px;
-}
+.h-scroll { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; }
 .h-scroll::-webkit-scrollbar { height: 4px; }
 .h-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 
 .flash-card {
   min-width: 160px; max-width: 160px;
   background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); overflow: hidden;
-  cursor: pointer; transition: transform .18s, box-shadow .18s; flex-shrink: 0;
+  border-radius: var(--r-lg); overflow: hidden; cursor: pointer;
+  transition: transform .18s, box-shadow .18s; flex-shrink: 0;
 }
 .flash-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
 .flash-img-wrap { position: relative; }
 .flash-img { width: 100%; height: 130px; object-fit: cover; display: block; }
 .flash-discount {
-  position: absolute; top: 8px; right: 8px;
-  background: var(--danger); color: #fff;
-  font-size: 11px; font-weight: 700;
-  padding: 2px 7px; border-radius: 99px;
+  position: absolute; top: 8px; right: 8px; background: var(--danger); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
 }
 .flash-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .flash-name {
@@ -399,24 +400,8 @@ onUnmounted(() => clearInterval(flashTimerHandle))
 .flash-save { font-size: 11px; color: #ff6900; font-weight: 600; }
 
 /* Product grid */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-}
-.empty-hint { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-3); font-size: 14px; }
-
-/* Hot tags */
-.hot-tags { display: flex; gap: 12px; flex-wrap: wrap; }
-.hot-tag-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 12px 20px; border-radius: var(--r-lg);
-  background: var(--card); border: 1.5px solid var(--border);
-  font-size: 14px; font-weight: 500; color: var(--text-1);
-  cursor: pointer; transition: all .18s;
-}
-.hot-tag-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
-.hot-tag-icon { font-size: 18px; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.empty-hint { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-3); }
 
 /* Pickup */
 .pickup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
@@ -442,21 +427,25 @@ onUnmounted(() => clearInterval(flashTimerHandle))
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-xs);
 }
-.feature {
-  display: flex; align-items: center; gap: 14px;
-  padding: 22px 24px; border-right: 1px solid var(--border);
-}
+.feature { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border-right: 1px solid var(--border); }
 .feature:last-child { border-right: none; }
 .feature-icon { font-size: 28px; flex-shrink: 0; }
 .feature-title { font-size: 14px; font-weight: 700; color: var(--text-1); margin-bottom: 3px; }
 .feature-desc { font-size: 12px; color: var(--text-3); }
 
-/* ── Mobile ─────────────────────────────────────────── */
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .dept-grid { grid-template-columns: repeat(5, 1fr); }
+}
 @media (max-width: 768px) {
   .home { gap: 28px; }
   .hero-slide { height: 220px; }
   .hero-overlay { padding: 20px; gap: 8px; }
   .hero-title { font-size: 18px; }
+  .dept-section { padding: 16px; }
+  .dept-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .dept-icon { font-size: 20px; }
+  .dept-label { font-size: 10px; }
   .product-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
   .pickup-grid { grid-template-columns: 1fr; }
   .features-bar { grid-template-columns: 1fr 1fr; }
@@ -466,9 +455,10 @@ onUnmounted(() => clearInterval(flashTimerHandle))
   .flash-timer { display: none; }
 }
 @media (max-width: 480px) {
+  .dept-grid { grid-template-columns: repeat(5, 1fr); gap: 2px; }
+  .dept-cell { padding: 8px 2px; }
   .product-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .features-bar { grid-template-columns: 1fr; }
-  .feature { border-right: none !important; }
   .feature:not(:last-child) { border-bottom: 1px solid var(--border); }
 }
 </style>

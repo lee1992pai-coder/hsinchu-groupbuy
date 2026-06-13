@@ -37,12 +37,19 @@
           <button class="sidebar-close" @click="sidebarOpen = false">✕</button>
         </div>
 
-        <!-- 分類 -->
+        <!-- 分類（分組） -->
         <div class="filter-group">
-          <div class="filter-label">商品分類</div>
+          <button
+            class="filter-btn"
+            :class="{ active: category === '' }"
+            @click="category = ''; doFetch()"
+          >🏪 全部商品</button>
+        </div>
+        <div class="filter-group" v-for="grp in categoryGroups" :key="grp.label">
+          <div class="filter-label">{{ grp.label }}</div>
           <div class="filter-options">
             <button
-              v-for="c in categories" :key="c.key"
+              v-for="c in grp.items" :key="c.key"
               class="filter-btn"
               :class="{ active: category === c.key }"
               @click="category = c.key; doFetch()"
@@ -201,19 +208,37 @@ const page = ref(0)
 const PAGE_SIZE = 24
 const hasMore = ref(false)
 
-const categories = [
-  { key: '',              label: '全部',     icon: '🏪' },
-  { key: 'food',          label: '熟食料理', icon: '🍱' },
-  { key: 'drink',         label: '飲品茶飲', icon: '🧋' },
-  { key: 'dessert',       label: '甜點烘焙', icon: '🍰' },
-  { key: 'fresh',         label: '生鮮蔬果', icon: '🥩' },
-  { key: 'snack',         label: '零食點心', icon: '🍿' },
-  { key: 'frozen',        label: '冷凍食品', icon: '🧊' },
-  { key: 'health',        label: '健康養生', icon: '🥗' },
-  { key: 'brunch',        label: '早午餐',   icon: '🍳' },
-  { key: 'international', label: '異國料理', icon: '🌏' },
-  { key: 'gift',          label: '伴手禮',   icon: '🎁' },
+const categoryGroups = [
+  {
+    label: '食品飲料', items: [
+      { key: 'food',          label: '熟食料理', icon: '🍱' },
+      { key: 'drink',         label: '飲品茶飲', icon: '🧋' },
+      { key: 'dessert',       label: '甜點烘焙', icon: '🍰' },
+      { key: 'fresh',         label: '生鮮蔬果', icon: '🥩' },
+      { key: 'snack',         label: '零食點心', icon: '🍿' },
+      { key: 'frozen',        label: '冷凍食品', icon: '🧊' },
+      { key: 'health',        label: '健康養生', icon: '🥗' },
+      { key: 'brunch',        label: '早午餐',   icon: '🍳' },
+      { key: 'international', label: '異國料理', icon: '🌏' },
+      { key: 'gift',          label: '伴手禮',   icon: '🎁' },
+    ],
+  },
+  {
+    label: '生活百貨', items: [
+      { key: 'daily',       label: '生活日用', icon: '🛒' },
+      { key: 'cleaning',    label: '清潔衛生', icon: '🧹' },
+      { key: 'beauty',      label: '美妝保養', icon: '💄' },
+      { key: 'baby',        label: '母嬰用品', icon: '👶' },
+      { key: 'pet',         label: '寵物用品', icon: '🐾' },
+      { key: 'electronics', label: '3C家電',   icon: '📱' },
+      { key: 'home',        label: '居家用品', icon: '🛋️' },
+      { key: 'stationery',  label: '文具玩具', icon: '✏️' },
+      { key: 'fashion',     label: '服飾配件', icon: '👕' },
+      { key: 'sports',      label: '運動戶外', icon: '🏃' },
+    ],
+  },
 ]
+const categories = [{ key: '', label: '全部', icon: '🏪' }, ...categoryGroups.flatMap(g => g.items)]
 
 const hotTags = ['今日熱門', '園區下午茶', '限時特惠', '新品上架', '人氣必買']
 
