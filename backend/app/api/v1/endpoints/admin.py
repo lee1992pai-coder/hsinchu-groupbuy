@@ -15,6 +15,7 @@ from app.models.order import Order, OrderItem, OrderStatus
 from app.models.payment import Payment, PaymentSplit
 from app.models.product import Product
 from app.services.push import send_push
+from sqlalchemy import cast, Date as SaDate
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -319,6 +320,70 @@ async def revenue_by_product(
         }
         for r in rows
     ]
+
+
+@router.get("/revenue/trend")
+async def revenue_trend(
+    start: date | None = None,
+    end: date | None = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+):
+    """平台每日銷售趨勢"""
+    from datetime import timedelta
+    if not end:
+        end = date.today()
+    if not start:
+        start = end - timedelta(days=29)
+    filters = _date_filter(start, end)
+    stmt = (
+        select(
+            cast(Order.created_at, SaDate).label("day"),
+            func.coalesce(func.sum(PaymentSplit.gross_amount), 0).label("gross"),
+            func.coalesce(func.sum(PaymentSplit.commission), 0).label("commission"),
+            func.count(PaymentSplit.id).label("orders"),
+        )
+        .join(Order, Order.id == PaymentSplit.order_id)
+        .group_by(cast(Order.created_at, SaDate))
+        .order_by(cast(Order.created_at, SaDate))
+    )
+    if filters:
+        stmt = stmt.where(and_(*filters))
+    rows = (await db.execute(stmt)).all()
+    data_map = {str(r.day): {"gross": float(r.gross), "commission": float(r.commission), "orders": int(r.orders)} for r in rows}
+    from datetime import timedelta as td
+    result, cur = [], start
+    while cur <= end:
+        key = str(cur)
+        result.append({"date": key, **data_map.get(key, {"gross": 0, "commission": 0, "orders": 0})})
+        cur += td(days=1)
+    return result
+
+
+@router.get("/revenue/by-category")
+async def revenue_by_category(
+    start: date | None = None,
+    end: date | None = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+):
+    """全平台各分類銷售佔比"""
+    date_filters = _date_filter(start, end)
+    stmt = (
+        select(
+            Product.category.label("category"),
+            func.coalesce(func.sum(OrderItem.quantity * OrderItem.unit_price), 0).label("revenue"),
+            func.coalesce(func.sum(OrderItem.quantity), 0).label("qty"),
+        )
+        .join(OrderItem, OrderItem.product_id == Product.id)
+        .join(Order, Order.id == OrderItem.order_id)
+        .group_by(Product.category)
+        .order_by(func.sum(OrderItem.quantity * OrderItem.unit_price).desc())
+    )
+    if date_filters:
+        stmt = stmt.where(and_(*date_filters))
+    rows = (await db.execute(stmt)).all()
+    return [{"category": r.category, "revenue": float(r.revenue), "qty": int(r.qty)} for r in rows]
 
 
 @router.get("/revenue/orders")

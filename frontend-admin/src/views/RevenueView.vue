@@ -1,5 +1,5 @@
 <template>
-  <div class="revenue-wrap">
+  <div class="revenue-wrap" ref="reportRef">
 
     <!-- 頁首 + 日期篩選 + 匯出 -->
     <div class="page-header">
@@ -24,8 +24,8 @@
           @change="loadAll"
         />
         <el-dropdown @command="exportExcel" trigger="click">
-          <el-button type="success" :loading="exporting">
-            <span>⬇ 匯出 Excel</span>
+          <el-button type="success" :loading="exporting.excel">
+            <span>⬇ Excel</span>
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </el-button>
           <template #dropdown>
@@ -37,6 +37,7 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
+        <el-button type="danger" :loading="exporting.pdf" @click="exportPDF">📄 PDF</el-button>
       </div>
     </div>
 
@@ -73,6 +74,33 @@
           <div class="kpi-sub">已付款 {{ summary.paid_order_count }} 筆</div>
         </div>
       </div>
+    </div>
+
+    <!-- 趨勢圖 + 餅圖 -->
+    <div class="chart-row">
+      <el-card class="chart-card" v-loading="loading.trend">
+        <template #header>
+          <div class="section-header">
+            <span>📈 每日銷售趨勢</span>
+            <el-radio-group v-model="trendMode" size="small" @change="renderTrend">
+              <el-radio-button value="gross">交易額</el-radio-button>
+              <el-radio-button value="commission">抽成</el-radio-button>
+              <el-radio-button value="orders">訂單數</el-radio-button>
+            </el-radio-group>
+          </div>
+        </template>
+        <div ref="trendChartEl" class="chart-el" />
+      </el-card>
+
+      <el-card class="chart-card pie-wrap" v-loading="loading.category">
+        <template #header><div class="section-header"><span>🥧 分類銷售佔比</span></div></template>
+        <div ref="pieChartEl" class="chart-el" />
+      </el-card>
+
+      <el-card class="chart-card pie-wrap" v-loading="loading.merchant">
+        <template #header><div class="section-header"><span>🏪 商家收入佔比</span></div></template>
+        <div ref="merchantPieEl" class="chart-el" />
+      </el-card>
     </div>
 
     <!-- 商家營收明細 -->
@@ -206,19 +234,34 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, nextTick, ref, computed } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
+import * as echarts from 'echarts/core'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import * as XLSX from 'xlsx'
 import api from '../api'
 
+echarts.use([LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
+
 // ── 狀態 ──────────────────────────────────────────────────
+const reportRef = ref(null)
+const trendChartEl = ref(null)
+const pieChartEl = ref(null)
+const merchantPieEl = ref(null)
+let trendChart = null, pieChart = null, merchantPieChart = null
+
 const dateRange = ref(null)
-const exporting = ref(false)
-const loading = ref({ summary: false, merchant: false, product: false, orders: false })
+const trendMode = ref('gross')
+const exporting = ref({ excel: false, pdf: false })
+const loading = ref({ summary: false, merchant: false, product: false, orders: false, trend: false, category: false })
 const summary = ref({ gross_revenue: 0, platform_income: 0, merchant_payout: 0, order_count: 0, paid_order_count: 0 })
 const merchantRows = ref([])
 const productRows = ref([])
 const orderRows = ref([])
+const trendData = ref([])
+const categoryData = ref([])
 const orderFilter = ref({ merchant: null, status: null })
 
 const totalRevenue = computed(() => productRows.value.reduce((s, r) => s + r.revenue, 0))
@@ -267,7 +310,64 @@ async function loadOrders() {
   } finally { loading.value.orders = false }
 }
 
-function loadAll() { loadSummary(); loadMerchant(); loadProduct(); loadOrders() }
+async function loadTrend() {
+  loading.value.trend = true
+  try { const { data } = await api.get('/admin/revenue/trend', { params: dateParams() }); trendData.value = data; renderTrend() }
+  finally { loading.value.trend = false }
+}
+async function loadCategory() {
+  loading.value.category = true
+  try { const { data } = await api.get('/admin/revenue/by-category', { params: dateParams() }); categoryData.value = data; renderPie(); renderMerchantPie() }
+  finally { loading.value.category = false }
+}
+function loadAll() { loadSummary(); loadMerchant(); loadProduct(); loadOrders(); loadTrend(); loadCategory() }
+
+// ── ECharts ───────────────────────────────────────────────
+const COLORS = ['#2563EB', '#16A34A', '#EA580C', '#7C3AED', '#0891B2', '#D97706', '#DB2777']
+const catMap = { food: '美食', drink: '飲品', dessert: '甜點', fresh: '生鮮' }
+
+function renderTrend() {
+  if (!trendChartEl.value) return
+  if (!trendChart) trendChart = echarts.init(trendChartEl.value)
+  const isAmt = trendMode.value !== 'orders'
+  trendChart.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}<br/>${isAmt ? 'NT$ ' + p[0].value.toLocaleString() : p[0].value + ' 筆'}` },
+    grid: { left: 65, right: 20, top: 20, bottom: 45 },
+    xAxis: { type: 'category', data: trendData.value.map(d => d.date.slice(5)), axisLabel: { rotate: 35, fontSize: 11 } },
+    yAxis: { type: 'value', axisLabel: { formatter: isAmt ? v => 'NT$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) : v => v + '筆' } },
+    series: [{
+      type: 'line', data: trendData.value.map(d => d[trendMode.value]), smooth: true,
+      lineStyle: { color: '#2563EB', width: 2.5 },
+      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(37,99,235,.3)' }, { offset: 1, color: 'rgba(37,99,235,.02)' }] } },
+      itemStyle: { color: '#2563EB' }, symbol: 'circle', symbolSize: 5,
+    }],
+  })
+}
+
+function renderPie() {
+  if (!pieChartEl.value) return
+  if (!pieChart) pieChart = echarts.init(pieChartEl.value)
+  const data = categoryData.value.map((d, i) => ({ name: catMap[d.category] || d.category, value: d.revenue, itemStyle: { color: COLORS[i % COLORS.length] } }))
+  pieChart.setOption({
+    tooltip: { trigger: 'item', formatter: p => `${p.name}<br/>NT$ ${p.value.toLocaleString()}<br/>${p.percent}%` },
+    legend: { orient: 'vertical', right: 5, top: 'center', textStyle: { fontSize: 11 } },
+    series: [{ type: 'pie', radius: ['42%', '68%'], center: ['38%', '50%'], data: data.length ? data : [{ name: '暫無', value: 1, itemStyle: { color: '#e2e8f0' } }], label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,.2)' } } }],
+  })
+}
+
+function renderMerchantPie() {
+  if (!merchantPieEl.value) return
+  if (!merchantPieChart) merchantPieChart = echarts.init(merchantPieEl.value)
+  const top6 = [...merchantRows.value].sort((a, b) => b.gross - a.gross).slice(0, 6)
+  const data = top6.map((m, i) => ({ name: m.merchant_name, value: m.gross, itemStyle: { color: COLORS[i % COLORS.length] } }))
+  merchantPieChart.setOption({
+    tooltip: { trigger: 'item', formatter: p => `${p.name}<br/>NT$ ${p.value.toLocaleString()}<br/>${p.percent}%` },
+    legend: { orient: 'vertical', right: 5, top: 'center', textStyle: { fontSize: 11 } },
+    series: [{ type: 'pie', radius: ['42%', '68%'], center: ['38%', '50%'], data: data.length ? data : [{ name: '暫無', value: 1, itemStyle: { color: '#e2e8f0' } }], label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 }, emphasis: { itemStyle: { shadowBlur: 8 } } }],
+  })
+}
+
+function onResize() { trendChart?.resize(); pieChart?.resize(); merchantPieChart?.resize() }
 
 // ── 格式化 ────────────────────────────────────────────────
 const fmt = (n) => `NT$ ${Number(n || 0).toLocaleString('zh-TW')}`
@@ -404,7 +504,33 @@ function exportExcel(type) {
   }
 }
 
-onMounted(loadAll)
+// ── PDF 匯出 ──────────────────────────────────────────────
+async function exportPDF() {
+  exporting.value.pdf = true
+  try {
+    const { default: html2canvas } = await import('html2canvas')
+    const { default: jsPDF } = await import('jspdf')
+    const canvas = await html2canvas(reportRef.value, { scale: 1.5, useCORS: true, backgroundColor: '#f8fafc' })
+    const imgData = canvas.toDataURL('image/jpeg', 0.92)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pw = pdf.internal.pageSize.getWidth()
+    const ph = pdf.internal.pageSize.getHeight()
+    const ih = (canvas.height * pw) / canvas.width
+    let y = 0
+    while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(imgData, 'JPEG', 0, -y, pw, ih); y += ph }
+    pdf.save(`平台帳務報表_${new Date().toISOString().slice(0, 10)}.pdf`)
+  } finally { exporting.value.pdf = false }
+}
+
+onMounted(async () => {
+  await nextTick()
+  loadAll()
+  window.addEventListener('resize', onResize)
+})
+onUnmounted(() => {
+  trendChart?.dispose(); pieChart?.dispose(); merchantPieChart?.dispose()
+  window.removeEventListener('resize', onResize)
+})
 </script>
 
 <style scoped>
@@ -461,6 +587,15 @@ onMounted(loadAll)
 @media (max-width: 900px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
 }
+/* 圖表 */
+.chart-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+.chart-card { border-radius: 14px; }
+.chart-el { height: 280px; }
+.pie-wrap .chart-el { height: 280px; }
+
+@media (max-width: 1100px) { .chart-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) { .chart-row { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 500px) {
   .kpi-grid { grid-template-columns: 1fr; }
   .page-header { flex-direction: column; }
