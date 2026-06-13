@@ -387,22 +387,27 @@ function formatDeadline(d) {
 
 onMounted(async () => {
   const pid = route.params.id
-  const [pRes, vRes, gbRes] = await Promise.all([
-    api.get(`/products/${pid}`),
-    api.get(`/products/${pid}/variants`),
-    api.get('/group-buys/').catch(() => ({ data: [] })),
-  ])
-  product.value = pRes.data
-  variants.value = vRes.data.filter(v => v.is_active !== false)
-  if (variants.value.length) selectedVariant.value = variants.value[0]
-  activeGroupBuy.value = gbRes.data.find(
-    (gb) => gb.product_id === pid && gb.status === 'open'
-  ) || null
-  loading.value = false
-  displayImg.value = allImages.value[0]
-  if (activeGroupBuy.value) {
-    updateCountdown()
-    timer = setInterval(updateCountdown, 1000)
+  try {
+    const [pRes, vRes, gbRes] = await Promise.all([
+      api.get(`/products/${pid}`),
+      api.get(`/products/${pid}/variants/`),   // trailing slash → avoid 307 redirect
+      api.get('/group-buys/').catch(() => ({ data: [] })),
+    ])
+    product.value = pRes.data
+    variants.value = (vRes.data || []).filter(v => v.is_active !== false)
+    if (variants.value.length) selectedVariant.value = variants.value[0]
+    activeGroupBuy.value = (gbRes.data || []).find(
+      (gb) => gb.product_id === pid && gb.status === 'open'
+    ) || null
+  } catch (e) {
+    console.error('商品載入失敗', e)
+  } finally {
+    loading.value = false
+    displayImg.value = allImages.value[0]
+    if (activeGroupBuy.value) {
+      updateCountdown()
+      timer = setInterval(updateCountdown, 1000)
+    }
   }
 })
 onUnmounted(() => clearInterval(timer))

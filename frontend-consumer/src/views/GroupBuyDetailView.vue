@@ -172,7 +172,7 @@ onMounted(async () => {
   gb.value = gbData
   const [pRes, vRes] = await Promise.all([
     api.get(`/products/${gbData.product_id}`),
-    api.get(`/products/${gbData.product_id}/variants`),
+    api.get(`/products/${gbData.product_id}/variants/`),
   ])
   product.value = pRes.data
   variants.value = vRes.data
